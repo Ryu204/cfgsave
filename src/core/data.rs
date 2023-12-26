@@ -80,6 +80,16 @@ impl Data {
     pub fn len(&self) -> usize {
         self.files.len()
     }
+    pub fn save(&self) -> Result<(), String> {
+        let path = match AppInfo::get_path(FileType::Data) {
+            Ok(path) => path,
+            Err(err) => return Err(err)
+        };
+        match fs::write(&path, self.list()) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(format!("Cannot save {:?}. Details:\n{}", path, err.to_string()))
+        }
+    }
     fn from(content: &str) -> Result<Self, String> {
         let names: Vec<&str> = content.split_whitespace().collect();
         let mut files: Vec<File> = Vec::new();
@@ -90,15 +100,5 @@ impl Data {
             }
         }
         Ok(Self { files })
-    }
-}
-
-impl Drop for Data {
-    fn drop(&mut self) {
-        let path = match AppInfo::get_path(FileType::Data) {
-            Ok(path) => path,
-            Err(_) => return
-        };
-        let _ = fs::write(path, self.list());
     }
 }

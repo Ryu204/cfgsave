@@ -10,7 +10,7 @@ pub fn execute(filename: &str) -> Result<(), String> {
         Err(err) => return Err(err)
     };
     data.insert(file_to_add);
-    Ok(())
+    data.save()
 }
 
 fn check_existence(filename: &str) -> Result<data::File, String> {
