@@ -1,15 +1,27 @@
 pub enum Command {
-    List
+    None,
+    List,
+    Add(String),
+    Err(String),
 }
 
-pub fn parse(args: &Vec<String>) -> Option<Command> {
+pub fn parse(args: &Vec<String>) -> Command {
     if args.len() == 1 {
-        None
+        Command::None
     }
     else if args[1] == "list" {
-        Some(Command::List)
+        if args.len() > 2 {
+            return Command::Err(String::from("\"list\" does not take parameters."));
+        }
+        Command::List
+    }
+    else if args[1] == "add" {
+        if args.len() != 3 {
+            return  Command::Err(String::from("Usage: add <absolute_filename>."));
+        }
+        Command::Add(args[2].clone())
     }
     else {
-        None
+        Command::Err(String::from("Unknown command."))
     }
 }

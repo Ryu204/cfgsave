@@ -1,15 +1,15 @@
 pub mod runner;
 pub use runner::cmd;
-pub mod app_cfg;
+pub mod core;
 
-pub fn run(command: &Option<cmd::Command>) -> Result<(), String> {
+pub fn run(command: cmd::Command) -> Result<(), String> {
     match command {
-        None => {
-            println!("Have a nice day!");
+        cmd::Command::List => runner::list::execute(),
+        cmd::Command::Add(filename) => runner::add::execute(&filename),
+        cmd::Command::None => {
+            println!("Have a good day!");
             Ok(())
         }
-        Some(cmd) => match cmd {
-            cmd::Command::List => runner::list::execute(),
-        }
+        cmd::Command::Err(err) => Err(err.to_string())
     }
 }
