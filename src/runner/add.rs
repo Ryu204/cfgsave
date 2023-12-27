@@ -14,7 +14,7 @@ pub fn execute(filename: &str) -> Result<(), String> {
         core::FileUpdate::Removed => return Err(String::from("File has been removed.")),
         _ => ()
     };    
-    println!("Adding {:?} to track list.", file_to_add.filename());
+    println!("Adding {:?} to tracked list.", file_to_add.filename());
     data.insert(file_to_add);
     data.save()
 }

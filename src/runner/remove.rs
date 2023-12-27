@@ -12,6 +12,7 @@ pub fn execute(filename: &str) -> Result<(), String> {
     if !data.contains(&file) {
         return Err(format!("{:?} is not tracked.", file.filename()))
     }
+    println!("Removing {:?} from tracked list.", file.filename());
     data.remove(&file);
     data.save()
 }

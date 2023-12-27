@@ -3,6 +3,7 @@ use crate::core::file::File;
 use crate::core::file::FileUpdate;
 use crate::core::app_cfg::AppInfo;
 use crate::core::app_cfg::FileType;
+use crate::core::file::FilePublish;
 
 pub struct Data {
     files: Vec<File>,
@@ -54,15 +55,57 @@ impl Data {
             Err(err) => Err(format!("Cannot save {:?}. Details:\n{}", path, err.to_string()))
         }
     }
-    pub fn snap(&self) -> Result<(), String> {
-        for file in &self.files {
-            match file.update() {
-                FileUpdate::Err(err) => return Err(err),
-                FileUpdate::Exist => println!("+\tSnapped {:?}.", file.filename()),
-                FileUpdate::Removed => println!("-\t{:?} was deleted.", file.filename())
-            };
+    pub fn snap(&mut self) -> Result<(), String> {
+        let mut error_log = String::new();
+        self.files.retain(|x| {
+            match x.update() {
+                FileUpdate::Err(err) => {
+                    error_log += &err;
+                    error_log += "\n";
+                    true
+                }
+                FileUpdate::Exist => {
+                    println!("+\tSnapped {:?}.", x.filename());
+                    true
+                }
+                FileUpdate::Removed => {
+                    println!("-\tRemoved {:?}.", x.filename());
+                    false
+                }
+            }
+        });
+        if !error_log.is_empty() {
+            Err(error_log)
         }
-        Ok(())
+        else {
+            Ok(())
+        }
+    }
+    pub fn publish(&self, quiet_yes: bool) -> Result<(), String> {
+        println!("Number of file(s) tracked: {}", self.len());
+        let mut error_log = String::new();
+        let mut count = 0;
+        let mut error_count = 0;
+        for file in &self.files {
+            count += 1;
+            println!("#{}. {:?}", count, file.filename());
+            if let FilePublish::Err(err) = file.publish(quiet_yes) {
+                error_log = format!("{}#{}. {}", 
+                if error_log.is_empty() {String::new()} else {error_log + "\n"}
+                , count, err.as_str());
+                error_count += 1;
+                println!("(!) FAILED");
+            }
+            else {
+                println!("(^) OK")
+            }
+        }
+        if !error_log.is_empty() {
+            Err(format!("{} file(s) failed:\n{}", error_count, error_log))
+        }
+        else {
+            Ok(())
+        }
     }
     fn from(content: &str) -> Result<Self, String> {
         let names: Vec<&str> = content.split("\n").filter(|x| !x.is_empty()).collect();

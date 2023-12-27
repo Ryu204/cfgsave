@@ -1,7 +1,7 @@
 use crate::core;
 
 pub fn execute() -> Result<(), String> {
-    let data = match core::Data::open() {
+    let mut data = match core::Data::open() {
         Ok(data) => data,
         Err(err) => return Err(err)
     };
@@ -11,7 +11,7 @@ pub fn execute() -> Result<(), String> {
     }
     else {
         match data.snap() {
-        Err(err) => Err(format!("Fatal error!\n{}", err)),
+        Err(err) => Err(format!("Fatal error(s)!\n{}", err)),
         Ok(_) => Ok(())
         }
     }
