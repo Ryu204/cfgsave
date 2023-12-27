@@ -3,6 +3,7 @@ pub enum Command {
     List,
     Add(String),
     Remove(String),
+    Snap,
     Err(String),
 }
 
@@ -27,6 +28,12 @@ pub fn parse(args: &Vec<String>) -> Command {
             return  Command::Err(String::from("Usage: remove <absolute_filename>."));
         }
         Command::Remove(args[2].clone())
+    }
+    else if args[1] == "snap" {
+        if args.len() > 2 {
+            return Command::Err(String::from("\"snap\" does not take parameters."));
+        }
+        Command::Snap
     }
     else {
         Command::Err(String::from("Unknown command."))

@@ -1,47 +1,8 @@
-use std::path::PathBuf;
-use std::str::FromStr;
 use std::fs;
+use crate::core::file::File;
+use crate::core::file::FileUpdate;
 use crate::core::app_cfg::AppInfo;
 use crate::core::app_cfg::FileType;
-
-pub struct File {
-    path: PathBuf,
-}
-
-impl File {
-    pub fn from(filename: &str) -> Result<Self, String> {
-        let mut maybe_res = Self {
-            path: PathBuf::new(),
-        };
-        maybe_res.path = match PathBuf::from_str(filename) {
-            Ok(path) => {
-                if !path.is_absolute() {
-                    return Err(format!("{:?} is not an absolute path", path))
-                }
-                path
-            }
-            Err(err) => return Err(err.to_string())
-        };
-        Ok(maybe_res)
-    }
-    pub fn filename(&self) -> String {
-        self.path.to_string_lossy().to_string()
-    }
-    pub fn exists(&self) -> Result<bool, String> {
-        match self.path.try_exists() {
-            Err(err) => return Err(err.to_string()),
-            Ok(state) => if state == false { return Ok(false) }
-        };
-        if self.path.is_file() { Ok(true) }
-        else {Err(format!("{:?} is a folder", self.path))}
-    }
-}
-
-impl PartialEq for File {
-    fn eq(&self, other: &Self) -> bool {
-        return self.path.eq(&other.path);
-    }
-}
 
 pub struct Data {
     files: Vec<File>,
@@ -92,6 +53,16 @@ impl Data {
             Ok(_) => Ok(()),
             Err(err) => Err(format!("Cannot save {:?}. Details:\n{}", path, err.to_string()))
         }
+    }
+    pub fn snap(&self) -> Result<(), String> {
+        for file in &self.files {
+            match file.update() {
+                FileUpdate::Err(err) => return Err(err),
+                FileUpdate::Exist => println!("+\tSnapped {:?}.", file.filename()),
+                FileUpdate::Removed => println!("-\t{:?} was deleted.", file.filename())
+            };
+        }
+        Ok(())
     }
     fn from(content: &str) -> Result<Self, String> {
         let names: Vec<&str> = content.split("\n").filter(|x| !x.is_empty()).collect();

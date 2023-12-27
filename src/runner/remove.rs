@@ -1,19 +1,17 @@
-use crate::core::data;
+use crate::core;
 
 pub fn execute(filename: &str) -> Result<(), String> {
-    let mut data = match data::Data::open() {
+    let mut data = match core::Data::open() {
         Ok(data) => data,
         Err(err) => return Err(err)
     };
-    let file = match data::File::from(filename) {
+    let file = match core::File::from(filename) {
         Ok(file) => file,
         Err(err) => return Err(err)
     };
     if !data.contains(&file) {
-        Err(format!("{:?} is not tracked.", file.filename()))
+        return Err(format!("{:?} is not tracked.", file.filename()))
     }
-    else {
-        data.remove(&file);
-        data.save()
-    }
+    data.remove(&file);
+    data.save()
 }

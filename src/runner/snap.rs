@@ -7,8 +7,12 @@ pub fn execute() -> Result<(), String> {
     };
     if data.len() == 0 {
         println!("No file tracked.");
-        return Ok(());
+        Ok(())
     }
-    println!("{} file(s) tracked:\n{}", data.len(), data.list());
-    Ok(())
+    else {
+        match data.snap() {
+        Err(err) => Err(format!("Fatal error!\n{}", err)),
+        Ok(_) => Ok(())
+        }
+    }
 }
