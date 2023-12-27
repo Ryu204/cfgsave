@@ -2,14 +2,17 @@ pub mod runner;
 pub use runner::cmd;
 pub mod core;
 
-pub fn run(command: cmd::Command) -> Result<(), String> {
+use cmd::Command;
+
+pub fn run(command: Command) -> Result<(), String> {
     match command {
-        cmd::Command::List => runner::list::execute(),
-        cmd::Command::Add(filename) => runner::add::execute(&filename),
-        cmd::Command::None => {
+        Command::List => runner::list::execute(),
+        Command::Add(filename) => runner::add::execute(&filename),
+        Command::Remove(filename) => runner::remove::execute(&filename),
+        Command::None => {
             println!("Have a good day!");
             Ok(())
         }
-        cmd::Command::Err(err) => Err(err.to_string())
+        Command::Err(err) => Err(err.to_string())
     }
 }

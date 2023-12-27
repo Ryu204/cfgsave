@@ -77,6 +77,9 @@ impl Data {
         if self.contains(&file) { return; }
         self.files.push(file);
     }
+    pub fn remove(&mut self, file: &File) {
+        self.files.retain(|x| !x.eq(file));
+    }
     pub fn len(&self) -> usize {
         self.files.len()
     }
@@ -91,7 +94,7 @@ impl Data {
         }
     }
     fn from(content: &str) -> Result<Self, String> {
-        let names: Vec<&str> = content.split_whitespace().collect();
+        let names: Vec<&str> = content.split("\n").filter(|x| !x.is_empty()).collect();
         let mut files: Vec<File> = Vec::new();
         for name in &names {
             match File::from(name) {

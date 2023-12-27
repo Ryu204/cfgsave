@@ -5,7 +5,8 @@ use std::path::PathBuf;
 pub static APP_NAME : &str = "cfgsave";
 
 pub enum FileType {
-    Data
+    Data,
+    Root
 }
 /// Defines path to needed files. 
 /// 
@@ -16,7 +17,8 @@ pub struct AppInfo  {
 impl AppInfo {
     pub fn get_path(file_type: FileType) -> Result<PathBuf, String> {
         match file_type {
-            FileType::Data => Self::build_pathbuf("data.txt")
+            FileType::Data => Self::build_pathbuf("data.txt"),
+            FileType::Root => Self::build_pathbuf("root"),
         }
     }
 
