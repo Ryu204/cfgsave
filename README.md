@@ -1,6 +1,6 @@
 # Description
 
-**cfgsave** is a tool to copy files into a common directory.
+**cfgsave** is a lightweight tool to backup files by copying them into a common directory.
 
 It was developed for managing configuration files in the Linux filesystem ([dotfiles](https://wiki.archlinux.org/title/Dotfiles)).
 
