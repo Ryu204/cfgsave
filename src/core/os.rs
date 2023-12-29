@@ -19,3 +19,20 @@ pub fn root() -> Result<PathBuf, String> {
         Err(err) => Err(err.to_string())
     }
 }
+
+pub fn cwd() -> Result<PathBuf, String> {
+    match std::env::current_dir() {
+        Ok(dir) => Ok(dir),
+        Err(err) => Err(err.to_string())
+    }
+}
+
+/// Convert relative address (to current working directory) to absolute.
+/// 
+/// If `path` is absolute, the result is `Ok(path)`
+pub fn absolute_path_by_cwd(path: &str) -> Result<String, String> {
+    match cwd() {
+        Ok(dir) => Ok(dir.join(path).to_string_lossy().to_string()),
+        Err(err) => Err(format!("Cannot locate current working directory: {}", err))
+    }
+}

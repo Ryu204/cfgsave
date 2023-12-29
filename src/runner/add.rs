@@ -1,7 +1,11 @@
 use crate::core;
 
 pub fn execute(filename: &str) -> Result<(), String> {
-    let file_to_add = match check_existence(filename) {
+    let filename = match core::absolute_path_by_cwd(filename) {
+        Ok(new_name) => new_name,
+        Err(err) => return Err(err)
+    };
+    let file_to_add = match check_existence(&filename) {
         Ok(file) => file,
         Err(err) => return Err(err)
     };

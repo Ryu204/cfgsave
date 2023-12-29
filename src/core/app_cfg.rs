@@ -1,4 +1,3 @@
-
 use std::fs;
 use std::path::PathBuf;
 use crate::core::os;
@@ -6,8 +5,10 @@ pub static APP_NAME : &str = "cfgsave";
 
 pub enum FileType {
     Data,
-    Base
+    Root,
+    Home
 }
+
 /// Defines path to needed files. 
 /// 
 /// Eg. data, config, .etc
@@ -17,7 +18,8 @@ impl AppInfo {
     pub fn get_path(file_type: FileType) -> Result<PathBuf, String> {
         match file_type {
             FileType::Data => Self::build_pathbuf("data.txt"),
-            FileType::Base => Self::build_pathbuf("base"),
+            FileType::Root => Self::build_pathbuf("root"),
+            FileType::Home => Self::build_pathbuf("home")
         }
     }
 

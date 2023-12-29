@@ -1,10 +1,12 @@
 use std::{path::PathBuf, io::Write};
 use std::str::FromStr;
 use std::fs;
-use crate::core::{AppInfo, FileType};
+use crate::core::{AppInfo, FileType, os};
 
 pub struct File {
+    data: PathBuf,
     path: PathBuf,
+    in_home: bool,
 }
 
 pub enum FileUpdate {
@@ -20,23 +22,33 @@ pub enum FilePublish {
 }
 
 impl File {
+    /// `filename` is either an absolute path or relative path from `$HOME`.
     pub fn from(filename: &str) -> Result<Self, String> {
-        let mut maybe_res = Self {
-            path: PathBuf::new(),
+        let home_dir = match os::home_dir() {
+            Ok(path) => path,
+            Err(err) => return Err(format!("Cannot locate home directory: {}", err))
         };
-        maybe_res.path = match PathBuf::from_str(filename) {
-            Ok(path) => {
-                if !path.is_absolute() {
-                    return Err(format!("{:?} is not an absolute path", path))
-                }
-                path
-            }
-            Err(err) => return Err(err.to_string())
+        let mut data = match PathBuf::from_str(filename) {
+            Ok(path) => path,
+            Err(err) => return Err(err.to_string()),
         };
-        Ok(maybe_res)
+        if data.starts_with(&home_dir) {
+            data = data.strip_prefix(&home_dir).unwrap().to_path_buf();
+        }
+        let in_home = data.is_relative();
+        let path = match in_home {
+            true => home_dir.join(&data),
+            false => data.clone()
+        };
+        Ok( Self {
+            data, path, in_home
+        })
     }
     pub fn filename(&self) -> String {
         self.path.to_string_lossy().to_string()
+    }
+    pub fn data(&self) -> &PathBuf {
+        &self.data
     }
     pub fn exists(&self) -> Result<bool, String> {
         match self.path.try_exists() {
@@ -44,7 +56,7 @@ impl File {
             Ok(state) => if state == false { return Ok(false) }
         };
         if self.path.is_file() { Ok(true) }
-        else {Err(format!("{:?} is a folder", self.path))}
+        else {Err(format!("{:?} is not a file", &self.path))}
     }
     pub fn update(&self) -> FileUpdate {
         let write_path = match self.get_write_path() {
@@ -63,16 +75,12 @@ impl File {
         let content = match std::fs::read_to_string(&self.path) {
             Ok(content) => content,
             Err(err) => return FileUpdate::Err(
-                format!("Cannot read {:?}. Details:\n{}", 
-                self.path, err.to_string())
-            )
+                format!("Cannot read {:?}. Details:\n{}", &self.path, err))
         };
         match Self::write_file(&write_path, &content) {
             Ok(_) => FileUpdate::Exist,
             Err(err) => FileUpdate::Err(format!(
-                "Cannot write {:?}. Details:\n{}",
-                write_path, err.to_string()
-            ))
+                "Cannot write {:?}. Details:\n{}", write_path, err))
         }
     }
     pub fn publish(&self, quiet: bool) -> FilePublish {
@@ -103,7 +111,7 @@ impl File {
         let content = match std::fs::read_to_string(&write_path) {
             Ok(content) => content,
             Err(err) => return FilePublish::Err(format!(
-                "Cannot read {:?}: {}", write_path, err.to_string()))
+                "Cannot read {:?}: {}", write_path, err))
         };
         match Self::write_file(&self.path, &content) {
             Ok(_) => FilePublish::Ok,
@@ -121,15 +129,24 @@ impl File {
         }
     }
     fn get_write_path(&self) -> Result<PathBuf, String> {
-        let base = match AppInfo::get_path(FileType::Base) {
-            Ok(path) => path,
-            Err(err) => return Err(err)
-        }; 
-        let relative_to_root = match AppInfo::strip_root(&self.path) {
-            Ok(path) => path,
-            Err(err) => return Err(err)
-        };
-        Ok(base.join(relative_to_root))
+        if self.in_home {
+            let base = match AppInfo::get_path(FileType::Home) {
+                Ok(path) => path,
+                Err(err) => return Err(err)
+            };
+            Ok(base.join(&self.data))
+        }
+        else {
+            let base = match AppInfo::get_path(FileType::Root) {
+                Ok(path) => path,
+                Err(err) => return Err(err)
+            };
+            let relative_to_root = match AppInfo::strip_root(&self.path) {
+                Ok(path) => path,
+                Err(err) => return Err(err)
+            };
+            Ok(base.join(relative_to_root))
+        }
     }
     fn touch_file(path: &PathBuf) -> Result<(), String> {
         let dir = match path.parent() {
@@ -154,6 +171,6 @@ impl File {
 
 impl PartialEq for File {
     fn eq(&self, other: &Self) -> bool {
-        return self.path.eq(&other.path);
+        return self.data.eq(&other.data);
     }
 }

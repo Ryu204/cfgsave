@@ -11,6 +11,7 @@ r"Usage:
     remove <name>   Remove a file from tracked list.
     snap            Update live status of tracked file(s).
     publish [quiet] Publish tracked file(s) to original address.
+                    [quiet] - Yes to all query
 Have a good day!";
 
 pub fn run(command: Command) -> Result<(), String> {

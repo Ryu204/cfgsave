@@ -50,9 +50,14 @@ impl Data {
             Ok(path) => path,
             Err(err) => return Err(err)
         };
-        match fs::write(&path, self.list()) {
+        let mut content = String::new();
+        for file in &self.files {
+            content += &file.data().to_string_lossy().to_string();
+            content += "\n";
+        }
+        match fs::write(&path, content) {
             Ok(_) => Ok(()),
-            Err(err) => Err(format!("Cannot save {:?}. Details:\n{}", path, err.to_string()))
+            Err(err) => Err(format!("Cannot save {:?}. Details:\n{}", path, err))
         }
     }
     pub fn snap(&mut self) -> Result<(), String> {
