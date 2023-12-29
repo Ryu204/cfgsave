@@ -1,7 +1,7 @@
-use crate::core::data;
+use crate::core;
 
 pub fn execute() -> Result<(), String> {
-    let data = match data::Data::open() {
+    let data = match core::Data::open() {
         Ok(data) => data,
         Err(err) => return Err(err)
     };

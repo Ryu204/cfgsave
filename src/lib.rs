@@ -2,14 +2,29 @@ pub mod runner;
 pub use runner::cmd;
 pub mod core;
 
-pub fn run(command: cmd::Command) -> Result<(), String> {
+use cmd::Command;
+
+const HELP_MESSAGE: &str = 
+r"Usage:
+    list            List all file(s) currently tracked.
+    add <name>      Add a file to be tracked.
+    remove <name>   Remove a file from tracked list.
+    snap            Update live status of tracked file(s).
+    publish [quiet] Publish tracked file(s) to original address.
+                    [quiet] - Yes to all query
+Have a good day!";
+
+pub fn run(command: Command) -> Result<(), String> {
     match command {
-        cmd::Command::List => runner::list::execute(),
-        cmd::Command::Add(filename) => runner::add::execute(&filename),
-        cmd::Command::None => {
-            println!("Have a good day!");
+        Command::List => runner::list::execute(),
+        Command::Add(filename) => runner::add::execute(&filename),
+        Command::Remove(filename) => runner::remove::execute(&filename),
+        Command::Snap => runner::snap::execute(),
+        Command::Publish(quiet) => runner::publish::execute(quiet.quiet_yes),
+        Command::None => {
+            println!("{}", HELP_MESSAGE);
             Ok(())
         }
-        cmd::Command::Err(err) => Err(err.to_string())
+        Command::Err(err) => Err(err.to_string())
     }
 }

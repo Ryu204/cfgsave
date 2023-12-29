@@ -1,47 +1,9 @@
-use std::path::PathBuf;
-use std::str::FromStr;
 use std::fs;
+use crate::core::file::File;
+use crate::core::file::FileUpdate;
 use crate::core::app_cfg::AppInfo;
 use crate::core::app_cfg::FileType;
-
-pub struct File {
-    path: PathBuf,
-}
-
-impl File {
-    pub fn from(filename: &str) -> Result<Self, String> {
-        let mut maybe_res = Self {
-            path: PathBuf::new(),
-        };
-        maybe_res.path = match PathBuf::from_str(filename) {
-            Ok(path) => {
-                if !path.is_absolute() {
-                    return Err(format!("{:?} is not an absolute path", path))
-                }
-                path
-            }
-            Err(err) => return Err(err.to_string())
-        };
-        Ok(maybe_res)
-    }
-    pub fn filename(&self) -> String {
-        self.path.to_string_lossy().to_string()
-    }
-    pub fn exists(&self) -> Result<bool, String> {
-        match self.path.try_exists() {
-            Err(err) => return Err(err.to_string()),
-            Ok(state) => if state == false { return Ok(false) }
-        };
-        if self.path.is_file() { Ok(true) }
-        else {Err(format!("{:?} is a folder", self.path))}
-    }
-}
-
-impl PartialEq for File {
-    fn eq(&self, other: &Self) -> bool {
-        return self.path.eq(&other.path);
-    }
-}
+use crate::core::file::FilePublish;
 
 pub struct Data {
     files: Vec<File>,
@@ -77,11 +39,81 @@ impl Data {
         if self.contains(&file) { return; }
         self.files.push(file);
     }
+    pub fn remove(&mut self, file: &File) {
+        self.files.retain(|x| !x.eq(file));
+    }
     pub fn len(&self) -> usize {
         self.files.len()
     }
+    pub fn save(&self) -> Result<(), String> {
+        let path = match AppInfo::get_path(FileType::Data) {
+            Ok(path) => path,
+            Err(err) => return Err(err)
+        };
+        let mut content = String::new();
+        for file in &self.files {
+            content += &file.data().to_string_lossy().to_string();
+            content += "\n";
+        }
+        match fs::write(&path, content) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(format!("Cannot save {:?}. Details:\n{}", path, err))
+        }
+    }
+    pub fn snap(&mut self) -> Result<(), String> {
+        let mut error_log = String::new();
+        self.files.retain(|x| {
+            match x.update() {
+                FileUpdate::Err(err) => {
+                    error_log += &err;
+                    error_log += "\n";
+                    true
+                }
+                FileUpdate::Exist => {
+                    println!("+\tSnapped {:?}.", x.filename());
+                    true
+                }
+                FileUpdate::Removed => {
+                    println!("-\tRemoved {:?}.", x.filename());
+                    false
+                }
+            }
+        });
+        if !error_log.is_empty() {
+            Err(error_log)
+        }
+        else {
+            Ok(())
+        }
+    }
+    pub fn publish(&self, quiet_yes: bool) -> Result<(), String> {
+        println!("Number of file(s) tracked: {}", self.len());
+        let mut error_log = String::new();
+        let mut count = 0;
+        let mut error_count = 0;
+        for file in &self.files {
+            count += 1;
+            println!("#{}. {:?}", count, file.filename());
+            if let FilePublish::Err(err) = file.publish(quiet_yes) {
+                error_log = format!("{}#{}. {}", 
+                if error_log.is_empty() {String::new()} else {error_log + "\n"}
+                , count, err.as_str());
+                error_count += 1;
+                println!("(!) FAILED");
+            }
+            else {
+                println!("(^) OK")
+            }
+        }
+        if !error_log.is_empty() {
+            Err(format!("{} file(s) failed:\n{}", error_count, error_log))
+        }
+        else {
+            Ok(())
+        }
+    }
     fn from(content: &str) -> Result<Self, String> {
-        let names: Vec<&str> = content.split_whitespace().collect();
+        let names: Vec<&str> = content.split("\n").filter(|x| !x.is_empty()).collect();
         let mut files: Vec<File> = Vec::new();
         for name in &names {
             match File::from(name) {
@@ -90,15 +122,5 @@ impl Data {
             }
         }
         Ok(Self { files })
-    }
-}
-
-impl Drop for Data {
-    fn drop(&mut self) {
-        let path = match AppInfo::get_path(FileType::Data) {
-            Ok(path) => path,
-            Err(_) => return
-        };
-        let _ = fs::write(path, self.list());
     }
 }
