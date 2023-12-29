@@ -6,6 +6,8 @@ It was developed for managing configuration files in the Linux filesystem ([dotf
 
 The tool is however designed to work with a version control system (VCS), such as **Git**. By manually copying files into a common directory, **cfgsave** reduces the need to rely on symlinks. The user only has to manage VCS inside one directory.
 
+Since this tool is way too simple, it's recommended to only manually track files the user **explicitly** edits.
+
 # Usage
 
 ## Options
